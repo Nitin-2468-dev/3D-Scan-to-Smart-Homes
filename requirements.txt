@@ -1,0 +1,25 @@
+# 3D Reconstruction + Multimodal QA - Core Dependencies
+
+# API dependencies (see api/requirements.txt for detailed list)
+-r api/requirements.txt
+
+# Image Processing (lightweight)
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Jupyter (for local development)
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+ruff>=0.1.0
+
+# Note: ML dependencies (torch, transformers, open3d) are heavy
+# and should be installed separately when needed:
+#
+#   pip install -r requirements-ml.txt
+#
+# Or install them in Kaggle/Colab environment which has them pre-installed.

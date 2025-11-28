@@ -1,0 +1,882 @@
+openapi: 3.1.0
+info:
+  title: 3D Reconstruction + Multimodal QA API
+  description: |
+    API for multi-view 3D reconstruction with instance segmentation and 
+    multimodal question answering over reconstructed scenes.
+  version: 0.1.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Service health checks
+  - name: Sessions
+    description: Session management for reconstruction jobs
+  - name: Reconstruction
+    description: 3D reconstruction operations
+  - name: QA
+    description: Multimodal question answering
+  - name: Artifacts
+    description: Generated artifact management
+  - name: Instances
+    description: Detected object instances
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Service health check
+      description: Returns the health status of the API service
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                version: "0.1.0"
+                timestamp: "2025-01-15T10:30:00Z"
+
+  /sessions:
+    post:
+      tags:
+        - Sessions
+      summary: Create session with image uploads
+      description: |
+        Creates a new reconstruction session and accepts image uploads.
+        Images should be multi-view captures of the scene to reconstruct.
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Multi-view images of the scene (minimum 3 recommended)
+                name:
+                  type: string
+                  description: Optional session name for identification
+                  example: "Living Room Scan"
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              example:
+                session_id: "ses_abc123def456"
+                name: "Living Room Scan"
+                status: "created"
+                image_count: 12
+                created_at: "2025-01-15T10:30:00Z"
+        '400':
+          description: Invalid request (no images provided)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}:
+    get:
+      tags:
+        - Sessions
+      summary: Get session details
+      description: Returns detailed information about a specific session
+      operationId: getSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Session details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Sessions
+      summary: Delete session
+      description: Deletes a session and all associated data
+      operationId: deleteSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/status:
+    get:
+      tags:
+        - Sessions
+      summary: Poll processing status
+      description: |
+        Returns the current processing status of a session.
+        Use this endpoint to poll for completion of async operations.
+      operationId: getSessionStatus
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatusResponse'
+              example:
+                session_id: "ses_abc123def456"
+                status: "processing"
+                current_step: "reconstruction"
+                progress: 45
+                message: "Running 3D reconstruction pipeline..."
+                started_at: "2025-01-15T10:30:00Z"
+                estimated_completion: "2025-01-15T10:35:00Z"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/reconstruct:
+    post:
+      tags:
+        - Reconstruction
+      summary: Trigger 3D reconstruction
+      description: |
+        Starts the 3D reconstruction pipeline for the session.
+        Supports two modes:
+        - quick: Faster processing with reduced quality (good for demos)
+        - full: Full quality reconstruction (takes longer)
+      operationId: triggerReconstruction
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReconstructionRequest'
+            example:
+              mode: "quick"
+      responses:
+        '202':
+          description: Reconstruction job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAcceptedResponse'
+              example:
+                job_id: "job_xyz789"
+                session_id: "ses_abc123def456"
+                status: "accepted"
+                message: "Reconstruction job queued"
+        '400':
+          description: Invalid request or session not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/structure:
+    post:
+      tags:
+        - Reconstruction
+      summary: Generate scene structure
+      description: |
+        Analyzes the reconstructed scene and generates structured output
+        including detected objects, layout elements, and spatial relationships.
+      operationId: generateStructure
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '202':
+          description: Structure generation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAcceptedResponse'
+        '400':
+          description: Reconstruction not complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/ask:
+    post:
+      tags:
+        - QA
+      summary: Multimodal QA endpoint
+      description: |
+        Ask questions about the reconstructed scene using multimodal LLM.
+        Can optionally focus on a specific detected object.
+      operationId: askQuestion
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+            example:
+              prompt: "What furniture is visible in this room?"
+              object_id: null
+              include_context: true
+      responses:
+        '200':
+          description: Answer generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AskResponse'
+              example:
+                session_id: "ses_abc123def456"
+                question: "What furniture is visible in this room?"
+                answer: "I can see a gray sofa, a wooden coffee table, two armchairs, a floor lamp, and a bookshelf against the wall."
+                confidence: 0.87
+                referenced_objects:
+                  - "obj_001"
+                  - "obj_002"
+                  - "obj_003"
+                processing_time_ms: 1250
+        '400':
+          description: Invalid request or scene not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/artifacts:
+    get:
+      tags:
+        - Artifacts
+      summary: List available artifacts
+      description: Returns a list of all generated artifacts for the session
+      operationId: listArtifacts
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Artifact list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactListResponse'
+              example:
+                session_id: "ses_abc123def456"
+                artifacts:
+                  - name: "pointcloud.ply"
+                    type: "pointcloud"
+                    size_bytes: 15234567
+                    created_at: "2025-01-15T10:32:00Z"
+                  - name: "scene.json"
+                    type: "scene_structure"
+                    size_bytes: 45678
+                    created_at: "2025-01-15T10:33:00Z"
+                  - name: "poses.json"
+                    type: "camera_poses"
+                    size_bytes: 12345
+                    created_at: "2025-01-15T10:31:30Z"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/artifacts/{name}:
+    get:
+      tags:
+        - Artifacts
+      summary: Download artifact
+      description: Downloads a specific artifact file
+      operationId: downloadArtifact
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - name: name
+          in: path
+          required: true
+          description: Artifact filename
+          schema:
+            type: string
+          example: "pointcloud.ply"
+      responses:
+        '200':
+          description: Artifact file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/fallback:
+    post:
+      tags:
+        - Sessions
+      summary: Load precomputed fallback
+      description: |
+        Loads precomputed demo assets for the session.
+        Use this when live processing fails to ensure demo success.
+      operationId: loadFallback
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scene_type:
+                  type: string
+                  description: Type of fallback scene to load
+                  enum:
+                    - living_room
+                    - bedroom
+                    - kitchen
+                    - office
+                  default: living_room
+      responses:
+        '200':
+          description: Fallback loaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /instances/{session_id}:
+    get:
+      tags:
+        - Instances
+      summary: List detected instances
+      description: Returns all detected object instances in the scene
+      operationId: listInstances
+      parameters:
+        - $ref: '#/components/parameters/SessionIdPath'
+      responses:
+        '200':
+          description: Instance list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceListResponse'
+              example:
+                session_id: "ses_abc123def456"
+                instance_count: 8
+                instances:
+                  - id: "obj_001"
+                    class_name: "sofa"
+                    confidence: 0.95
+                    bounding_box:
+                      min_x: 1.2
+                      min_y: 0.0
+                      min_z: 2.1
+                      max_x: 3.5
+                      max_y: 0.9
+                      max_z: 3.2
+                    center:
+                      x: 2.35
+                      y: 0.45
+                      z: 2.65
+                    mask_path: "instances/obj_001_mask.png"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      description: Unique session identifier
+      schema:
+        type: string
+        pattern: '^ses_[a-zA-Z0-9]+$'
+      example: "ses_abc123def456"
+
+    SessionIdPath:
+      name: session_id
+      in: path
+      required: true
+      description: Unique session identifier
+      schema:
+        type: string
+      example: "ses_abc123def456"
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+          description: Current health status
+        version:
+          type: string
+          description: API version
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server timestamp
+
+    SessionResponse:
+      type: object
+      required:
+        - session_id
+        - status
+        - image_count
+        - created_at
+      properties:
+        session_id:
+          type: string
+          description: Unique session identifier
+        name:
+          type: string
+          description: Optional session name
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        image_count:
+          type: integer
+          minimum: 0
+          description: Number of uploaded images
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+
+    SessionDetailResponse:
+      type: object
+      required:
+        - session_id
+        - status
+        - image_count
+        - created_at
+      properties:
+        session_id:
+          type: string
+          description: Unique session identifier
+        name:
+          type: string
+          description: Optional session name
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        image_count:
+          type: integer
+          minimum: 0
+          description: Number of uploaded images
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        reconstruction_mode:
+          type: string
+          enum:
+            - quick
+            - full
+          description: Reconstruction quality mode
+        has_reconstruction:
+          type: boolean
+          description: Whether reconstruction is complete
+        has_structure:
+          type: boolean
+          description: Whether scene structure is generated
+        has_fallback:
+          type: boolean
+          description: Whether fallback assets are loaded
+        artifact_count:
+          type: integer
+          description: Number of available artifacts
+        instance_count:
+          type: integer
+          description: Number of detected instances
+
+    SessionStatus:
+      type: string
+      enum:
+        - created
+        - uploading
+        - processing
+        - reconstructing
+        - structuring
+        - ready
+        - failed
+        - fallback
+      description: Current session processing status
+
+    SessionStatusResponse:
+      type: object
+      required:
+        - session_id
+        - status
+      properties:
+        session_id:
+          type: string
+          description: Unique session identifier
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        current_step:
+          type: string
+          description: Current processing step name
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Progress percentage (0-100)
+        message:
+          type: string
+          description: Human-readable status message
+        started_at:
+          type: string
+          format: date-time
+          description: Processing start time
+        estimated_completion:
+          type: string
+          format: date-time
+          description: Estimated completion time
+        error:
+          type: string
+          description: Error message if status is failed
+
+    ReconstructionRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - quick
+            - full
+          default: quick
+          description: |
+            Reconstruction quality mode:
+            - quick: Faster processing, lower resolution (recommended for demos)
+            - full: Full quality reconstruction
+
+    JobAcceptedResponse:
+      type: object
+      required:
+        - job_id
+        - session_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: Unique job identifier for tracking
+        session_id:
+          type: string
+          description: Associated session identifier
+        status:
+          type: string
+          enum:
+            - accepted
+            - queued
+          description: Job acceptance status
+        message:
+          type: string
+          description: Status message
+
+    AskRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Question to ask about the scene
+        object_id:
+          type: string
+          description: Optional object ID to focus the question on
+        include_context:
+          type: boolean
+          default: true
+          description: Whether to include scene context in the response
+
+    AskResponse:
+      type: object
+      required:
+        - session_id
+        - question
+        - answer
+      properties:
+        session_id:
+          type: string
+          description: Session identifier
+        question:
+          type: string
+          description: Original question
+        answer:
+          type: string
+          description: Generated answer
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Answer confidence score
+        referenced_objects:
+          type: array
+          items:
+            type: string
+          description: Object IDs referenced in the answer
+        processing_time_ms:
+          type: integer
+          description: Processing time in milliseconds
+        is_fallback:
+          type: boolean
+          description: Whether this answer came from fallback data
+
+    ArtifactListResponse:
+      type: object
+      required:
+        - session_id
+        - artifacts
+      properties:
+        session_id:
+          type: string
+          description: Session identifier
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+
+    Artifact:
+      type: object
+      required:
+        - name
+        - type
+        - size_bytes
+        - created_at
+      properties:
+        name:
+          type: string
+          description: Artifact filename
+        type:
+          type: string
+          enum:
+            - pointcloud
+            - scene_structure
+            - camera_poses
+            - instance_mask
+            - depth_map
+            - mesh
+            - thumbnail
+          description: Artifact type
+        size_bytes:
+          type: integer
+          description: File size in bytes
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        download_url:
+          type: string
+          format: uri
+          description: Optional direct download URL
+
+    InstanceListResponse:
+      type: object
+      required:
+        - session_id
+        - instance_count
+        - instances
+      properties:
+        session_id:
+          type: string
+          description: Session identifier
+        instance_count:
+          type: integer
+          description: Total number of instances
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instance'
+
+    Instance:
+      type: object
+      required:
+        - id
+        - class_name
+        - bounding_box
+      properties:
+        id:
+          type: string
+          description: Unique instance identifier
+        class_name:
+          type: string
+          description: Detected object class
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Detection confidence score
+        bounding_box:
+          $ref: '#/components/schemas/BoundingBox'
+        center:
+          $ref: '#/components/schemas/Point3D'
+        mask_path:
+          type: string
+          description: Path to instance segmentation mask
+        embedding:
+          type: array
+          items:
+            type: number
+          description: Instance embedding vector (optional)
+
+    BoundingBox:
+      type: object
+      required:
+        - min_x
+        - min_y
+        - min_z
+        - max_x
+        - max_y
+        - max_z
+      properties:
+        min_x:
+          type: number
+          format: float
+        min_y:
+          type: number
+          format: float
+        min_z:
+          type: number
+          format: float
+        max_x:
+          type: number
+          format: float
+        max_y:
+          type: number
+          format: float
+        max_z:
+          type: number
+          format: float
+
+    Point3D:
+      type: object
+      required:
+        - x
+        - y
+        - z
+      properties:
+        x:
+          type: number
+          format: float
+        y:
+          type: number
+          format: float
+        z:
+          type: number
+          format: float
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+        request_id:
+          type: string
+          description: Request ID for debugging

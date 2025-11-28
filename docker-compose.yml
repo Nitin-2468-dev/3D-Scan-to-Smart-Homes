@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Redis for Celery message broker and result backend
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENVIRONMENT=development
+      - APP_DEBUG=true
+      - APP_DEMO_MODE=true
+      - APP_REDIS_URL=redis://redis:6379/0
+      - APP_CELERY_BROKER_URL=redis://redis:6379/0
+      - APP_CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - APP_UPLOAD_DIR=/app/uploads
+      - APP_ARTIFACTS_DIR=/app/artifacts
+      - APP_FALLBACK_DIR=/app/fallback
+    volumes:
+      - ./uploads:/app/uploads
+      - ./artifacts:/app/artifacts
+      - ./fallback:/app/fallback
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery worker for background tasks
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A api.tasks worker --loglevel=info
+    environment:
+      - APP_REDIS_URL=redis://redis:6379/0
+      - APP_CELERY_BROKER_URL=redis://redis:6379/0
+      - APP_CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - APP_UPLOAD_DIR=/app/uploads
+      - APP_ARTIFACTS_DIR=/app/artifacts
+    volumes:
+      - ./uploads:/app/uploads
+      - ./artifacts:/app/artifacts
+      - ./fallback:/app/fallback
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis_data:

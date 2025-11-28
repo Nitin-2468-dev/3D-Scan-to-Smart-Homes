@@ -1,0 +1,190 @@
+{
+  "name": "Demo Living Room",
+  "description": "A modern living room scene with comfortable seating and functional furniture",
+  "bounds": {
+    "min": [-0.1, 0.0, -0.1],
+    "max": [5.0, 3.0, 5.0]
+  },
+  "objects": [
+    {
+      "id": "obj_001",
+      "class": "sofa",
+      "label": "Gray L-shaped Sofa",
+      "position": [2.35, 0.45, 2.65],
+      "dimensions": [2.3, 0.9, 1.1],
+      "bounding_box": {
+        "min": [1.2, 0.0, 2.1],
+        "max": [3.5, 0.9, 3.2]
+      },
+      "confidence": 0.95,
+      "color": "gray",
+      "material": "fabric"
+    },
+    {
+      "id": "obj_002",
+      "class": "coffee_table",
+      "label": "Wooden Coffee Table",
+      "position": [2.5, 0.25, 1.5],
+      "dimensions": [1.2, 0.5, 0.6],
+      "bounding_box": {
+        "min": [1.9, 0.0, 1.2],
+        "max": [3.1, 0.5, 1.8]
+      },
+      "confidence": 0.92,
+      "color": "brown",
+      "material": "wood"
+    },
+    {
+      "id": "obj_003",
+      "class": "armchair",
+      "label": "Accent Armchair (Left)",
+      "position": [0.5, 0.4, 2.0],
+      "dimensions": [0.9, 0.8, 0.9],
+      "bounding_box": {
+        "min": [0.05, 0.0, 1.55],
+        "max": [0.95, 0.8, 2.45]
+      },
+      "confidence": 0.89,
+      "color": "beige",
+      "material": "fabric"
+    },
+    {
+      "id": "obj_004",
+      "class": "armchair",
+      "label": "Accent Armchair (Right)",
+      "position": [4.2, 0.4, 2.0],
+      "dimensions": [0.9, 0.8, 0.9],
+      "bounding_box": {
+        "min": [3.75, 0.0, 1.55],
+        "max": [4.65, 0.8, 2.45]
+      },
+      "confidence": 0.88,
+      "color": "beige",
+      "material": "fabric"
+    },
+    {
+      "id": "obj_005",
+      "class": "floor_lamp",
+      "label": "Modern Floor Lamp",
+      "position": [0.3, 0.75, 3.5],
+      "dimensions": [0.3, 1.5, 0.3],
+      "bounding_box": {
+        "min": [0.15, 0.0, 3.35],
+        "max": [0.45, 1.5, 3.65]
+      },
+      "confidence": 0.91,
+      "color": "black",
+      "material": "metal"
+    },
+    {
+      "id": "obj_006",
+      "class": "bookshelf",
+      "label": "Tall Bookshelf",
+      "position": [4.5, 1.0, 4.0],
+      "dimensions": [1.0, 2.0, 0.4],
+      "bounding_box": {
+        "min": [4.0, 0.0, 3.8],
+        "max": [5.0, 2.0, 4.2]
+      },
+      "confidence": 0.87,
+      "color": "brown",
+      "material": "wood"
+    },
+    {
+      "id": "obj_007",
+      "class": "rug",
+      "label": "Area Rug",
+      "position": [2.5, 0.01, 2.0],
+      "dimensions": [3.0, 0.02, 2.0],
+      "bounding_box": {
+        "min": [1.0, 0.0, 1.0],
+        "max": [4.0, 0.02, 3.0]
+      },
+      "confidence": 0.93,
+      "color": "beige",
+      "material": "wool"
+    },
+    {
+      "id": "obj_008",
+      "class": "tv_stand",
+      "label": "Media Console",
+      "position": [2.5, 0.3, 0.3],
+      "dimensions": [1.8, 0.6, 0.4],
+      "bounding_box": {
+        "min": [1.6, 0.0, 0.1],
+        "max": [3.4, 0.6, 0.5]
+      },
+      "confidence": 0.90,
+      "color": "walnut",
+      "material": "wood"
+    }
+  ],
+  "layout": {
+    "floor": {
+      "y": 0.0,
+      "material": "hardwood",
+      "color": "oak"
+    },
+    "ceiling": {
+      "y": 2.8,
+      "material": "plaster",
+      "color": "white"
+    },
+    "walls": [
+      {
+        "name": "north",
+        "normal": [0, 0, -1],
+        "position": 5.0,
+        "material": "paint",
+        "color": "beige"
+      },
+      {
+        "name": "south",
+        "normal": [0, 0, 1],
+        "position": -0.1,
+        "material": "paint",
+        "color": "beige"
+      },
+      {
+        "name": "east",
+        "normal": [-1, 0, 0],
+        "position": 5.0,
+        "material": "paint",
+        "color": "beige"
+      },
+      {
+        "name": "west",
+        "normal": [1, 0, 0],
+        "position": -0.1,
+        "material": "paint",
+        "color": "beige"
+      }
+    ],
+    "doors": [
+      {
+        "id": "door_001",
+        "position": [2.5, 1.0, -0.05],
+        "dimensions": [0.9, 2.1],
+        "type": "single",
+        "swing": "inward"
+      }
+    ],
+    "windows": [
+      {
+        "id": "window_001",
+        "position": [4.95, 1.5, 2.5],
+        "dimensions": [1.5, 1.2],
+        "type": "double",
+        "wall": "east"
+      }
+    ]
+  },
+  "metadata": {
+    "scene_type": "living_room",
+    "style": "modern",
+    "approximate_area_sqm": 25,
+    "reconstruction_mode": "fallback",
+    "generated_at": "PRECOMPUTED_FALLBACK_ASSET",
+    "note": "This is a precomputed fallback asset for demo reliability"
+  }
+}

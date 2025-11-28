@@ -1,0 +1,92 @@
+{
+  "scene_type": "living_room",
+  "generated_at": "PRECOMPUTED_FALLBACK_ASSET",
+  "note": "Pre-computed QA pairs for demo reliability",
+  "qa_pairs": [
+    {
+      "id": "qa_001",
+      "question": "What furniture is in this room?",
+      "answer": "I can see a gray sofa, a wooden coffee table, two armchairs, a floor lamp, a bookshelf, a rug, and a TV stand.",
+      "confidence": 0.95,
+      "referenced_objects": ["obj_001", "obj_002", "obj_003", "obj_004", "obj_005", "obj_006", "obj_007", "obj_008"]
+    },
+    {
+      "id": "qa_002",
+      "question": "How many chairs are there?",
+      "answer": "There are 2 armchairs in the room, positioned on either side of the seating area.",
+      "confidence": 0.92,
+      "referenced_objects": ["obj_003", "obj_004"]
+    },
+    {
+      "id": "qa_003",
+      "question": "What is the color scheme of the room?",
+      "answer": "The room features warm neutral tones with beige walls, a gray sofa, and wooden furniture in natural oak and walnut finishes. The overall palette is calming and contemporary.",
+      "confidence": 0.88,
+      "referenced_objects": ["obj_001", "obj_002", "obj_006", "obj_008"]
+    },
+    {
+      "id": "qa_004",
+      "question": "Where is the TV located?",
+      "answer": "The TV is mounted above or placed on the media console (TV stand), which is positioned against the south wall facing the sofa.",
+      "confidence": 0.90,
+      "referenced_objects": ["obj_008"]
+    },
+    {
+      "id": "qa_005",
+      "question": "Is there good lighting in the room?",
+      "answer": "Yes, the room has a modern floor lamp near the corner for ambient lighting, and there's a large double window on the east wall that provides natural light during the day.",
+      "confidence": 0.87,
+      "referenced_objects": ["obj_005"]
+    },
+    {
+      "id": "qa_006",
+      "question": "Describe the seating arrangement.",
+      "answer": "The seating is arranged in a conversational layout. The main L-shaped gray sofa faces the TV stand, with a coffee table in front. Two accent armchairs are positioned on either side of the seating area, creating a balanced and inviting space for conversations.",
+      "confidence": 0.91,
+      "referenced_objects": ["obj_001", "obj_002", "obj_003", "obj_004"]
+    },
+    {
+      "id": "qa_007",
+      "question": "What type of flooring does the room have?",
+      "answer": "The room has hardwood flooring in an oak finish. There's also an area rug in the center of the seating area that adds warmth and defines the living space.",
+      "confidence": 0.89,
+      "referenced_objects": ["obj_007"]
+    },
+    {
+      "id": "qa_008",
+      "question": "Is there any storage in the room?",
+      "answer": "Yes, there's a tall bookshelf positioned near the corner of the room that provides storage for books and decorative items. The TV stand also offers some storage space below the media area.",
+      "confidence": 0.86,
+      "referenced_objects": ["obj_006", "obj_008"]
+    },
+    {
+      "id": "qa_009",
+      "question": "How would you describe the overall style?",
+      "answer": "This is a modern living room with a minimalist yet comfortable aesthetic. The furniture features clean lines, neutral colors, and a mix of materials including fabric upholstery and natural wood. The layout is functional and promotes both relaxation and social interaction.",
+      "confidence": 0.93,
+      "referenced_objects": []
+    },
+    {
+      "id": "qa_010",
+      "question": "What is the approximate size of the room?",
+      "answer": "Based on the reconstruction, the room is approximately 5 meters by 5 meters, giving an area of about 25 square meters (roughly 270 square feet). The ceiling height is approximately 2.8 meters.",
+      "confidence": 0.85,
+      "referenced_objects": []
+    }
+  ],
+  "keywords": {
+    "furniture": ["qa_001"],
+    "chair": ["qa_002"],
+    "color": ["qa_003"],
+    "tv": ["qa_004"],
+    "light": ["qa_005"],
+    "lamp": ["qa_005"],
+    "seat": ["qa_006"],
+    "floor": ["qa_007"],
+    "storage": ["qa_008"],
+    "book": ["qa_008"],
+    "style": ["qa_009"],
+    "size": ["qa_010"],
+    "area": ["qa_010"]
+  }
+}

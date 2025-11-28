@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Scene Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        #info h1 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        #info p {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        
+        #controls button {
+            display: block;
+            width: 100%;
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: #4a4a6a;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        #controls button:hover {
+            background: #6a6a8a;
+        }
+        
+        #controls button.active {
+            background: #007bff;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            display: none;
+            z-index: 200;
+            max-width: 250px;
+        }
+        
+        #tooltip .label {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+        }
+        
+        #tooltip .details {
+            color: #ccc;
+            font-size: 0.8rem;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 300;
+        }
+        
+        #loading.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #object-list {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 200px;
+        }
+        
+        #object-list h3 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+        }
+        
+        #object-list ul {
+            list-style: none;
+        }
+        
+        #object-list li {
+            padding: 5px 10px;
+            margin: 3px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        
+        #object-list li:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        #object-list li.selected {
+            background: rgba(79, 195, 247, 0.3);
+            border-left: 3px solid #4fc3f7;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <div id="info">
+        <h1>3D Scene Viewer</h1>
+        <p>Drag to rotate • Scroll to zoom</p>
+        <p>Right-click drag to pan</p>
+        <p id="stats">Loading...</p>
+    </div>
+    
+    <div id="controls">
+        <button id="btn-pointcloud" class="active">Point Cloud</button>
+        <button id="btn-boxes">Bounding Boxes</button>
+        <button id="btn-reset">Reset View</button>
+        <button id="btn-load-demo">Load Demo Scene</button>
+    </div>
+    
+    <div id="object-list">
+        <h3>Detected Objects</h3>
+        <ul id="objects"></ul>
+    </div>
+    
+    <div id="tooltip">
+        <div class="label"></div>
+        <div class="details"></div>
+    </div>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Loading scene...</p>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let pointCloud = null;
+        let boundingBoxes = [];
+        let sceneData = null;
+        let selectedObject = null;
+        
+        // Scene configuration constants
+        const SCENE_CONFIG = {
+            ROOM_WIDTH: 10,      // Scene X dimension
+            ROOM_HEIGHT: 3,      // Scene Y dimension (height)
+            ROOM_DEPTH: 10,      // Scene Z dimension
+            GRID_SIZE: 10,       // Grid helper size
+            GRID_DIVISIONS: 10  // Grid divisions
+        };
+        
+        // Initialize Three.js scene
+        function init() {
+            const container = document.getElementById('container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                60,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(5, 5, 5);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = true;
+            controls.minDistance = 1;
+            controls.maxDistance = 50;
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 5);
+            scene.add(directionalLight);
+            
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_DIVISIONS, 0x444444, 0x333333);
+            scene.add(gridHelper);
+            
+            // Axes helper
+            const axesHelper = new THREE.AxesHelper(2);
+            scene.add(axesHelper);
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            
+            // Button handlers
+            document.getElementById('btn-pointcloud').addEventListener('click', togglePointCloud);
+            document.getElementById('btn-boxes').addEventListener('click', toggleBoundingBoxes);
+            document.getElementById('btn-reset').addEventListener('click', resetView);
+            document.getElementById('btn-load-demo').addEventListener('click', loadDemoScene);
+            
+            // Hide loading, show demo
+            document.getElementById('loading').classList.add('hidden');
+            updateStats('No scene loaded');
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Load PLY point cloud
+        function loadPointCloud(url) {
+            const loader = new THREE.PLYLoader();
+            
+            document.getElementById('loading').classList.remove('hidden');
+            
+            loader.load(
+                url,
+                function(geometry) {
+                    geometry.computeVertexNormals();
+                    
+                    const material = new THREE.PointsMaterial({
+                        size: 0.02,
+                        vertexColors: true
+                    });
+                    
+                    if (pointCloud) {
+                        scene.remove(pointCloud);
+                    }
+                    
+                    pointCloud = new THREE.Points(geometry, material);
+                    scene.add(pointCloud);
+                    
+                    // Center camera on point cloud
+                    geometry.computeBoundingBox();
+                    const center = new THREE.Vector3();
+                    geometry.boundingBox.getCenter(center);
+                    controls.target.copy(center);
+                    
+                    document.getElementById('loading').classList.add('hidden');
+                    updateStats(`Points: ${geometry.attributes.position.count.toLocaleString()}`);
+                },
+                function(xhr) {
+                    const percent = (xhr.loaded / xhr.total * 100).toFixed(0);
+                    document.getElementById('loading').querySelector('p').textContent = `Loading... ${percent}%`;
+                },
+                function(error) {
+                    console.error('Error loading PLY:', error);
+                    document.getElementById('loading').classList.add('hidden');
+                    updateStats('Failed to load point cloud');
+                }
+            );
+        }
+        
+        // Load scene JSON
+        function loadSceneJSON(data) {
+            sceneData = data;
+            
+            // Clear existing bounding boxes
+            boundingBoxes.forEach(box => scene.remove(box));
+            boundingBoxes = [];
+            
+            // Create bounding boxes for objects
+            if (data.objects) {
+                const objectList = document.getElementById('objects');
+                objectList.innerHTML = '';
+                
+                data.objects.forEach((obj, index) => {
+                    // Create bounding box
+                    const dims = obj.dimensions || [1, 1, 1];
+                    const pos = obj.position || [0, 0, 0];
+                    
+                    const geometry = new THREE.BoxGeometry(dims[0], dims[1], dims[2]);
+                    const edges = new THREE.EdgesGeometry(geometry);
+                    const material = new THREE.LineBasicMaterial({
+                        color: getObjectColor(obj.class),
+                        linewidth: 2
+                    });
+                    
+                    const box = new THREE.LineSegments(edges, material);
+                    box.position.set(pos[0], pos[1], pos[2]);
+                    box.userData = obj;
+                    
+                    boundingBoxes.push(box);
+                    scene.add(box);
+                    
+                    // Add to object list
+                    const li = document.createElement('li');
+                    li.textContent = `${obj.class} (${obj.id})`;
+                    li.dataset.id = obj.id;
+                    li.addEventListener('click', () => selectObject(obj.id));
+                    objectList.appendChild(li);
+                });
+            }
+            
+            updateStats(`Objects: ${data.objects ? data.objects.length : 0}`);
+        }
+        
+        // Get color based on object class
+        function getObjectColor(className) {
+            const colors = {
+                'sofa': 0x4fc3f7,
+                'coffee_table': 0x81c784,
+                'armchair': 0xffb74d,
+                'floor_lamp': 0xfff176,
+                'bookshelf': 0xba68c8,
+                'rug': 0xf48fb1,
+                'tv_stand': 0x90a4ae,
+                'default': 0xffffff
+            };
+            return colors[className] || colors['default'];
+        }
+        
+        // Select object
+        function selectObject(objectId) {
+            // Update list selection
+            document.querySelectorAll('#objects li').forEach(li => {
+                li.classList.toggle('selected', li.dataset.id === objectId);
+            });
+            
+            // Highlight bounding box
+            boundingBoxes.forEach(box => {
+                if (box.userData.id === objectId) {
+                    box.material.color.setHex(0xff0000);
+                    selectedObject = box;
+                    
+                    // Focus camera on object
+                    const pos = box.position;
+                    controls.target.set(pos.x, pos.y, pos.z);
+                } else {
+                    box.material.color.setHex(getObjectColor(box.userData.class));
+                }
+            });
+        }
+        
+        // Mouse move handler for tooltips
+        function onMouseMove(event) {
+            const tooltip = document.getElementById('tooltip');
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check intersection with bounding boxes
+            const meshes = boundingBoxes.map(box => {
+                const dims = box.userData.dimensions || [1, 1, 1];
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(dims[0], dims[1], dims[2])
+                );
+                mesh.position.copy(box.position);
+                mesh.userData = box.userData;
+                return mesh;
+            });
+            
+            const intersects = raycaster.intersectObjects(meshes);
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object.userData;
+                tooltip.querySelector('.label').textContent = obj.class;
+                tooltip.querySelector('.details').textContent = `ID: ${obj.id}`;
+                tooltip.style.left = event.clientX + 15 + 'px';
+                tooltip.style.top = event.clientY + 15 + 'px';
+                tooltip.style.display = 'block';
+            } else {
+                tooltip.style.display = 'none';
+            }
+        }
+        
+        // Toggle point cloud visibility
+        function togglePointCloud() {
+            const btn = document.getElementById('btn-pointcloud');
+            if (pointCloud) {
+                pointCloud.visible = !pointCloud.visible;
+                btn.classList.toggle('active', pointCloud.visible);
+            }
+        }
+        
+        // Toggle bounding boxes visibility
+        function toggleBoundingBoxes() {
+            const btn = document.getElementById('btn-boxes');
+            const visible = boundingBoxes.length > 0 ? !boundingBoxes[0].visible : true;
+            boundingBoxes.forEach(box => box.visible = visible);
+            btn.classList.toggle('active', visible);
+        }
+        
+        // Reset camera view
+        function resetView() {
+            camera.position.set(5, 5, 5);
+            controls.target.set(0, 0, 0);
+        }
+        
+        // Load demo scene
+        function loadDemoScene() {
+            // Demo scene data
+            const demoScene = {
+                "name": "Demo Living Room",
+                "bounds": {"min": [-5, 0, -5], "max": [5, 3, 5]},
+                "objects": [
+                    {"id": "obj_001", "class": "sofa", "position": [2.35, 0.45, 2.65], "dimensions": [2.3, 0.9, 1.1]},
+                    {"id": "obj_002", "class": "coffee_table", "position": [2.5, 0.25, 1.5], "dimensions": [1.2, 0.5, 0.6]},
+                    {"id": "obj_003", "class": "armchair", "position": [0.5, 0.4, 2.0], "dimensions": [0.9, 0.8, 0.9]},
+                    {"id": "obj_004", "class": "armchair", "position": [4.2, 0.4, 2.0], "dimensions": [0.9, 0.8, 0.9]},
+                    {"id": "obj_005", "class": "floor_lamp", "position": [0.3, 0.75, 3.5], "dimensions": [0.3, 1.5, 0.3]},
+                    {"id": "obj_006", "class": "bookshelf", "position": [4.5, 1.0, 4.0], "dimensions": [1.0, 2.0, 0.4]},
+                    {"id": "obj_007", "class": "rug", "position": [2.5, 0.01, 2.0], "dimensions": [3.0, 0.02, 2.0]},
+                    {"id": "obj_008", "class": "tv_stand", "position": [2.5, 0.3, 0.3], "dimensions": [1.8, 0.6, 0.4]}
+                ]
+            };
+            
+            loadSceneJSON(demoScene);
+            
+            // Generate demo point cloud
+            generateDemoPointCloud();
+        }
+        
+        // Generate a simple demo point cloud
+        function generateDemoPointCloud() {
+            const numPoints = 50000;
+            const positions = new Float32Array(numPoints * 3);
+            const colors = new Float32Array(numPoints * 3);
+            
+            for (let i = 0; i < numPoints; i++) {
+                // Random points in a room-like space using scene config
+                positions[i * 3] = (Math.random() - 0.5) * SCENE_CONFIG.ROOM_WIDTH;     // X
+                positions[i * 3 + 1] = Math.random() * SCENE_CONFIG.ROOM_HEIGHT;        // Y (height)
+                positions[i * 3 + 2] = (Math.random() - 0.5) * SCENE_CONFIG.ROOM_DEPTH; // Z
+                
+                // Random colors (warm tones)
+                colors[i * 3] = 0.6 + Math.random() * 0.4;
+                colors[i * 3 + 1] = 0.5 + Math.random() * 0.3;
+                colors[i * 3 + 2] = 0.4 + Math.random() * 0.2;
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.02,
+                vertexColors: true
+            });
+            
+            if (pointCloud) {
+                scene.remove(pointCloud);
+            }
+            
+            pointCloud = new THREE.Points(geometry, material);
+            scene.add(pointCloud);
+            
+            document.getElementById('btn-pointcloud').classList.add('active');
+            updateStats(`Points: ${numPoints.toLocaleString()} | Objects: 8`);
+        }
+        
+        // Update stats display
+        function updateStats(text) {
+            document.getElementById('stats').textContent = text;
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

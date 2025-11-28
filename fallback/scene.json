@@ -184,6 +184,7 @@
     "style": "modern",
     "approximate_area_sqm": 25,
     "reconstruction_mode": "fallback",
-    "generated_at": "2025-01-15T10:30:00Z"
+    "generated_at": "PRECOMPUTED_FALLBACK_ASSET",
+    "note": "This is a precomputed fallback asset for demo reliability"
   }
 }

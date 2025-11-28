@@ -74,7 +74,15 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers,
 )
 
-# In-memory session storage (for demo; production would use Redis/DB)
+# In-memory session storage for demo purposes.
+# NOTE: This is suitable for single-instance demo deployments only.
+# For production, implement a SessionStore interface backed by Redis/PostgreSQL
+# to handle concurrent access, persistence, and horizontal scaling.
+# Example interface:
+#   class SessionStore(Protocol):
+#       async def get(self, session_id: str) -> dict | None: ...
+#       async def set(self, session_id: str, data: dict) -> None: ...
+#       async def delete(self, session_id: str) -> None: ...
 sessions: dict[str, dict] = {}
 
 

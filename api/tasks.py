@@ -22,6 +22,10 @@ celery_app = Celery(
     backend=settings.celery_result_backend,
 )
 
+# Task time limits (in seconds)
+TASK_TIME_LIMIT = 3600  # 1 hour max
+TASK_SOFT_TIME_LIMIT = 3000  # 50 minutes soft limit
+
 # Celery configuration
 celery_app.conf.update(
     task_serializer="json",
@@ -30,8 +34,8 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_track_started=True,
-    task_time_limit=3600,  # 1 hour max
-    task_soft_time_limit=3000,  # 50 minutes soft limit
+    task_time_limit=TASK_TIME_LIMIT,
+    task_soft_time_limit=TASK_SOFT_TIME_LIMIT,
 )
 
 

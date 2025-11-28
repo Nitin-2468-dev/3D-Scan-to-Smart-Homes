@@ -1,6 +1,7 @@
 {
   "scene_type": "living_room",
-  "generated_at": "2025-01-15T10:30:00Z",
+  "generated_at": "PRECOMPUTED_FALLBACK_ASSET",
+  "note": "Pre-computed QA pairs for demo reliability",
   "qa_pairs": [
     {
       "id": "qa_001",

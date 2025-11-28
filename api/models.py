@@ -102,7 +102,10 @@ class Instance(BaseModel):
         None, description="Path to instance segmentation mask"
     )
     embedding: Optional[list[float]] = Field(
-        None, description="Instance embedding vector"
+        None,
+        min_length=1,
+        max_length=4096,
+        description="Instance embedding vector (typically 128-2048 dimensions)",
     )
 
 

@@ -1,0 +1,25 @@
+# ML Dependencies for 3D Reconstruction + Multimodal QA
+# 
+# These are heavy dependencies that should only be installed
+# when running the full ML pipeline (e.g., in Kaggle/Colab).
+#
+# Install with: pip install -r requirements-ml.txt
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Transformers and LMM
+transformers>=4.36.0
+accelerate>=0.25.0
+bitsandbytes>=0.41.0
+
+# 3D Processing
+open3d>=0.18.0
+scipy>=1.11.0
+
+# Image Processing
+opencv-python>=4.8.0
+
+# Visualization
+matplotlib>=3.8.0

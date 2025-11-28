@@ -216,6 +216,15 @@
         let sceneData = null;
         let selectedObject = null;
         
+        // Scene configuration constants
+        const SCENE_CONFIG = {
+            ROOM_WIDTH: 10,      // Scene X dimension
+            ROOM_HEIGHT: 3,      // Scene Y dimension (height)
+            ROOM_DEPTH: 10,      // Scene Z dimension
+            GRID_SIZE: 10,       // Grid helper size
+            GRID_DIVISIONS: 10  // Grid divisions
+        };
+        
         // Initialize Three.js scene
         function init() {
             const container = document.getElementById('container');
@@ -256,7 +265,7 @@
             scene.add(directionalLight);
             
             // Grid helper
-            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x333333);
+            const gridHelper = new THREE.GridHelper(SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_DIVISIONS, 0x444444, 0x333333);
             scene.add(gridHelper);
             
             // Axes helper
@@ -508,10 +517,10 @@
             const colors = new Float32Array(numPoints * 3);
             
             for (let i = 0; i < numPoints; i++) {
-                // Random points in a room-like space
-                positions[i * 3] = (Math.random() - 0.5) * 10;     // X
-                positions[i * 3 + 1] = Math.random() * 3;          // Y (height)
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z
+                // Random points in a room-like space using scene config
+                positions[i * 3] = (Math.random() - 0.5) * SCENE_CONFIG.ROOM_WIDTH;     // X
+                positions[i * 3 + 1] = Math.random() * SCENE_CONFIG.ROOM_HEIGHT;        // Y (height)
+                positions[i * 3 + 2] = (Math.random() - 0.5) * SCENE_CONFIG.ROOM_DEPTH; // Z
                 
                 // Random colors (warm tones)
                 colors[i * 3] = 0.6 + Math.random() * 0.4;

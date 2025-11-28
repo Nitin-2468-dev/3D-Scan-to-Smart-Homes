@@ -1,0 +1,38 @@
+# 3D Reconstruction + Multimodal QA - Core Dependencies
+
+# API dependencies (see api/requirements.txt for detailed list)
+-r api/requirements.txt
+
+# Notebook/Pipeline dependencies
+# Note: These are heavy dependencies - install only when needed
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Transformers and LMM
+transformers>=4.36.0
+accelerate>=0.25.0
+bitsandbytes>=0.41.0
+
+# 3D Processing
+open3d>=0.18.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Image Processing
+Pillow>=10.0.0
+opencv-python>=4.8.0
+
+# Visualization
+matplotlib>=3.8.0
+
+# Jupyter
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+ruff>=0.1.0

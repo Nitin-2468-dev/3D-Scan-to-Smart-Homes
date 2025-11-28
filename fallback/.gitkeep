@@ -1,0 +1,5 @@
+# Placeholder for precomputed demo assets
+# This directory will contain fallback files for demo reliability:
+# - pointcloud.ply: Precomputed point cloud
+# - scene.json: Scene structure with objects and layout
+# - answers.json: Pre-computed Q&A pairs
